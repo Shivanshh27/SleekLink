@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import AnalyticsCharts from "./components/AnalyticsCharts";
 
 function App() {
   const API = import.meta.env.VITE_API_URL;
@@ -147,6 +148,35 @@ function App() {
       });
   };
 
+  // ⏸️ Toggle Active Status
+  const handleToggleActive = async (code) => {
+    try {
+      const res = await fetch(`${API}/toggle-active/${code}`, {
+        method: "PATCH",
+      });
+      const data = await res.json();
+      if (data.error) {
+        addToast(data.error, "error");
+        return;
+      }
+      
+      addToast(data.message, "success");
+      setUrls((prev) =>
+        prev.map((item) =>
+          item.short_code === code ? { ...item, is_active: data.is_active } : item
+        )
+      );
+
+      // If analytics is currently loaded for this link, refresh it
+      if (analytics && analytics.shortCode === code) {
+        getAnalyticsFromCode(code);
+      }
+    } catch (err) {
+      console.error("Error toggling link status:", err);
+      addToast("Failed to toggle link status", "error");
+    }
+  };
+
   return (
     <>
       {/* Glow background blobs */}
@@ -262,28 +292,42 @@ function App() {
 
         {/* Analytics Details Panel */}
         {analytics && (
-          <section className="glass-card">
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-              <h2>📊 Real-Time Analytics</h2>
+          <section className="glass-card" style={{ animation: "fadeIn 0.5s ease-out" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+              <h2>📊 Analytics Dashboard</h2>
               <button 
                 onClick={() => setAnalytics(null)} 
                 className="btn-action" 
-                style={{ background: "transparent", color: "var(--text-secondary)", border: "none" }}
+                style={{ 
+                  background: "rgba(255,255,255,0.05)", 
+                  color: "var(--text-secondary)", 
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  padding: "6px 12px",
+                  borderRadius: "8px",
+                  cursor: "pointer",
+                  fontSize: "0.85rem",
+                  transition: "all 0.2s"
+                }}
               >
-                ✕ Close
+                ✕ Close Panel
               </button>
             </div>
             
             <div className="analytics-grid">
               <div className="stat-card">
                 <div className="stat-label">Short Code</div>
-                <div className="stat-value" style={{ color: "#a5b4fc" }}>{analytics.shortCode}</div>
+                <div className="stat-value" style={{ color: "var(--primary-light)", letterSpacing: "0.5px" }}>
+                  /{analytics.shortCode}
+                </div>
               </div>
               <div className="stat-card">
                 <div className="stat-label">Total Clicks</div>
-                <div className="stat-value">{analytics.totalClicks}</div>
+                <div className="stat-value" style={{ color: "#34d399" }}>{analytics.totalClicks}</div>
               </div>
             </div>
+
+            {/* Custom SVG & Distribution Charts */}
+            <AnalyticsCharts data={analytics} />
           </section>
         )}
 
@@ -305,6 +349,7 @@ function App() {
                     <th>Short URL</th>
                     <th>Original Destination</th>
                     <th>Status</th>
+                    <th>Active</th>
                     <th style={{ textAlign: "right" }}>Actions</th>
                   </tr>
                 </thead>
@@ -354,6 +399,17 @@ function App() {
                               {status.formattedDate} {status.formattedTime}
                             </span>
                           )}
+                        </td>
+
+                        <td data-label="Active">
+                          <label className="toggle-switch">
+                            <input 
+                              type="checkbox" 
+                              checked={item.is_active !== false}
+                              onChange={() => handleToggleActive(item.short_code)}
+                            />
+                            <span className="toggle-slider"></span>
+                          </label>
                         </td>
 
                         <td data-label="Actions" style={{ textAlign: "right" }}>

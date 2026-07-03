@@ -12,6 +12,7 @@ function App() {
   const [expiresAt, setExpiresAt] = useState("");
   const [loading, setLoading] = useState(false);
   const [toasts, setToasts] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Helper to trigger custom Toast notifications
   const addToast = (message, type = "success") => {
@@ -178,6 +179,31 @@ function App() {
     }
   };
 
+  // 📥 Download QR Code
+  const downloadQRCode = (code) => {
+    const fullUrl = `${API}/${code}`;
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(fullUrl)}`;
+    
+    addToast("Generating QR download...", "info");
+    fetch(qrUrl)
+      .then((res) => res.blob())
+      .then((blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `qr-${code}.png`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        addToast("QR Code downloaded!", "success");
+      })
+      .catch((err) => {
+        console.error("QR download failed:", err);
+        addToast("Failed to download QR code", "error");
+      });
+  };
+
   return (
     <>
       {/* Glow background blobs */}
@@ -325,6 +351,33 @@ function App() {
                 <div className="stat-label">Total Clicks</div>
                 <div className="stat-value" style={{ color: "#34d399" }}>{analytics.totalClicks}</div>
               </div>
+              <div className="stat-card" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "16px", padding: "16px 20px" }}>
+                <div style={{ textAlign: "left" }}>
+                  <div className="stat-label">QR Code</div>
+                  <button 
+                    onClick={() => downloadQRCode(analytics.shortCode)} 
+                    className="btn-action" 
+                    style={{ 
+                      marginTop: "10px", 
+                      padding: "5px 10px", 
+                      fontSize: "0.75rem",
+                      background: "rgba(99, 102, 241, 0.12)",
+                      border: "1px solid rgba(99, 102, 241, 0.25)",
+                      color: "var(--primary-light)",
+                      borderRadius: "6px"
+                    }}
+                  >
+                    📥 Download
+                  </button>
+                </div>
+                <div style={{ background: "#ffffff", padding: "6px", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 12px rgba(0,0,0,0.15)" }}>
+                  <img 
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(`${API}/${analytics.shortCode}`)}`} 
+                    alt="QR Code" 
+                    style={{ width: "68px", height: "68px", display: "block" }}
+                  />
+                </div>
+              </div>
             </div>
 
             {/* Custom SVG & Distribution Charts */}
@@ -334,7 +387,28 @@ function App() {
 
         {/* All Links List */}
         <section className="glass-card">
-          <h2>📋 Shortened Links Registry</h2>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px", marginBottom: "20px" }}>
+            <h2 style={{ marginBottom: 0 }}>📋 Shortened Links Registry</h2>
+            <div style={{ position: "relative", width: "100%", maxWidth: "300px" }}>
+              <input
+                type="text"
+                placeholder="Search links..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="input-field"
+                style={{ 
+                  padding: "10px 14px 10px 38px", 
+                  fontSize: "0.9rem",
+                  borderRadius: "10px",
+                  background: "rgba(15, 23, 42, 0.55)",
+                  border: "1px solid rgba(255, 255, 255, 0.08)"
+                }}
+              />
+              <span style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)", fontSize: "0.95rem", pointerEvents: "none" }}>
+                🔍
+              </span>
+            </div>
+          </div>
 
           {urls.length === 0 ? (
             <div className="empty-state">
@@ -356,9 +430,23 @@ function App() {
                 </thead>
 
                 <tbody>
-                  {urls.map((item) => {
-                    const status = getExpirationStatus(item.expires_at);
-                    return (
+                  {(() => {
+                    const filtered = urls.filter(item => 
+                      item.original_url.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                      item.short_code.toLowerCase().includes(searchQuery.toLowerCase())
+                    );
+                    if (filtered.length === 0) {
+                      return (
+                        <tr>
+                          <td colSpan="6" style={{ textAlign: "center", padding: "30px", color: "var(--text-muted)", fontSize: "0.95rem" }}>
+                            No links match your search query
+                          </td>
+                        </tr>
+                      );
+                    }
+                    return filtered.map((item) => {
+                      const status = getExpirationStatus(item.expires_at);
+                      return (
                       <tr key={item.short_code}>
                         <td data-label="Code">
                           <span className="code-badge">{item.short_code}</span>
@@ -439,8 +527,9 @@ function App() {
                         </td>
                       </tr>
                     );
-                  })}
-                </tbody>
+                  });
+                })()}
+              </tbody>
               </table>
             </div>
           )}

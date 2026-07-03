@@ -463,7 +463,13 @@ h2 {
 .action-group {
   display: flex;
   gap: 8px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+}
+
+.custom-table td:nth-child(1),
+.custom-table td:nth-child(2),
+.custom-table td:nth-child(6) {
+  white-space: nowrap;
 }
 
 /* Analytics Stats section */

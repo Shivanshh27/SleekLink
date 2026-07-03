@@ -18,6 +18,7 @@ app.use(
         "http://localhost:5173",
         "https://url-shortener-theta-ecru.vercel.app",
         "https://urlshortener.shivansh.online",
+        "https://sleeklink.shivansh.online",
       ];
 
       if (allowed.includes(origin)) {

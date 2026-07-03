@@ -2,7 +2,7 @@
 
 SleekLink is a high-performance, developer-ready, full-stack URL shortener application featuring a glassmorphic user interface, real-time analytics, dynamic QR codes, client-side registry search, and active link controls (pause/resume). 
 
-🔗 **Live Deployed Demo**: [https://urlshortener.shivansh.online](https://urlshortener.shivansh.online)
+🔗 **Live Deployed Demo**: [https://sleeklink.shivansh.online](https://sleeklink.shivansh.online)
 
 Built with scalability and modern design standards in mind, this project showcases full-stack capabilities, caching design patterns, timezone-aware analytics, and clean UI engineering.
 
